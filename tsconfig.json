@@ -1,0 +1,36 @@
+{
+  "compilerOptions":{
+     "target":"es2017",
+     "module":"commonjs",
+     "outDir":"dist",
+     "rootDir":"./",
+     "strict":true,
+     "strictPropertyInitialization":false,
+     "moduleResolution":"node",
+     "baseUrl":".",
+     "paths":{
+        "*":[
+           "node_modules/@types/*",
+           "node_modules/*"
+        ],
+       "@core/*": ["src/core/*"],
+       "@app/*": ["src/application/*"],
+       "@framework/*": ["src/framework/*"],
+     },
+     "typeRoots":[
+        "node_modules/@types"
+     ],
+     "esModuleInterop":true,
+     "experimentalDecorators":true,
+     "emitDecoratorMetadata":true,
+     "skipLibCheck":true,
+     "forceConsistentCasingInFileNames":true
+  },
+  "include":[
+     "src/**/*.ts",
+     "tests/**/*.ts"
+  ],
+  "exclude":[
+     "node_modules"
+  ]
+}

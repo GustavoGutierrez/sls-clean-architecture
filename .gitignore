@@ -1,0 +1,30 @@
+
+# System files
+.DS_Store
+
+# Application
+coverage
+node_modules
+/dist
+/dist.zip
+/.esbuild/.build
+/.esbuild/.build.zip
+
+# local env files
+.env
+.ENV
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor directories and files
+.vscode
+
+# Compilled files
+.serverless
+.esbuild
+.dynamodb/**
+

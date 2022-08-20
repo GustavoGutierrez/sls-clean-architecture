@@ -1,0 +1,143 @@
+service: sls-clean-architecture
+
+useDotenv: true
+
+frameworkVersion: "2||3"
+
+provider:
+  name: aws #cloud provider
+  timeout: 10
+  memorySize: 256
+  stage: ${opt:stage, self:custom.stage} #stage
+  region: us-east-1  # cloud provider region where service deploys and resides. choose your preferred region
+  runtime: nodejs14.x  #runtime language and version
+  apiGateway:
+    # accepted binary type for file uploads
+    binaryMediaTypes:
+      - 'multipart/form-data'
+  environment:
+    HOST: ${opt:host, 'clean-architecture.com'}
+    SSM_PARAMETER_NAME: ${self:service}
+    STAGE: ${opt:stage, self:provider.stage}
+    REGION: ${opt:region, self:provider.region}
+    ACCOUNT_ID: ${opt:accountId, '000000000000'}
+    AWS_BUCKET_MEDIA: ${self:service}-${opt:stage, self:provider.stage}-media
+    USER_TABLE: ${self:service}-${opt:stage, self:provider.stage}-users
+  iam:
+    role: arn:aws:iam::000000000000:role/sls-clean-architecture-lambda-role #Role with access to services your lambda depends on.
+
+functions:
+  seeder-lambda:
+    handler: src/lambda/Seed.handler
+    events:
+      - http: 'POST /db/seed'
+  register-user-lambda:
+    handler: src/lambda/RegisterUser.handler
+    events:
+      - http: 'POST /user/register'
+  update-user-lambda:
+    handler: src/lambda/UpdateUser.handler
+    events:
+      - http: 'PUT /user/update'
+  list-user-lambda:
+    handler: src/lambda/ListUser.handler
+    events:
+      - http: 'GET /users'
+  login-user-lambda:
+    handler: src/lambda/AuthUser.handler
+    events:
+      - http: 'POST /user/login'
+  refresh-token-lambda:
+    handler: src/lambda/RefreshToken.handler
+    events:
+      - http: 'POST /user/refresh-token'
+  verify-user-lambda:
+    handler: src/lambda/VerifyUser.handler
+    events:
+      - http: 'POST /user/verify'
+  reset-password-lambda:
+    handler: src/lambda/ResetPassword.handler
+    events:
+      - http: 'POST /user/reset-password'
+  password-change-lambda:
+    handler: src/lambda/PasswordChange.handler
+    events:
+      - http: 'POST /user/password-change'
+  set-password-lambda:
+    handler: src/lambda/SetPassword.handler
+    events:
+      - http: 'POST /user/set-password' 
+
+resources:
+  Resources:
+    MediaContent:
+      Type: 'AWS::S3::Bucket'
+      Properties:
+        BucketName: '${self:provider.environment.AWS_BUCKET_MEDIA}'
+        AccessControl: "PublicRead"
+    UsersDynamoDBTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        TableName: ${self:provider.environment.USER_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          -
+            AttributeName: email
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: email
+            KeyType: HASH
+        Tags:
+            - Key: groupTable
+              Value: ${self:service}-${self:provider.stage}
+
+package:
+  patterns:
+    - "!.dynamodb/**"
+    - '!.git/**'
+    - '!.emails/**'
+    - '!.docs/**'
+    - '!.assets/**'
+
+custom:
+  stages:
+    #offline
+    - local
+    #AWS
+    - staging
+  stage: ${opt:stage, 'local'}
+  config: file(config/${self:custom.stage}.js)
+  ACCOUNT_ID: ${${self:custom.config}:config.ACCOUNT_ID}
+  REGION: ${${self:custom.config}:config.REGION}
+  dynamodb:
+    stages:
+      - local
+    start:
+      port: 8001
+      inMemory: true
+      migrate: true
+      seed: true
+      convertEmptyValues: true
+  serverless-offline-sns:
+    port: 4002 # a free port for the sns server to run on
+    host: 0.0.0.0
+    # debug: true
+  esbuild:
+    bundle: true
+    minify: true
+    external:
+      - sharp
+    packagerOptions:
+      scripts:
+        - npm install --arch=x64 --platform=linux sharp
+  serverless-offline:
+    watch: true
+
+plugins:
+  - serverless-esbuild
+  - serverless-dotenv-plugin
+  - serverless-dynamodb-local
+  - serverless-offline-sns
+  - serverless-offline
+  - serverless-prune-plugin

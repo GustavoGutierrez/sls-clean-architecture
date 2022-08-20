@@ -1,0 +1,11 @@
+# Ignore artifacts: 
+build 
+coverage
+.esbuid
+dist
+
+# Ignore all HTML files:
+*.html 
+
+# Ignore all test files:
+*.test.ts
